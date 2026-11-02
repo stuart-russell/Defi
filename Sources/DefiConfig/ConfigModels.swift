@@ -46,6 +46,45 @@ public struct InputConfig: Codable, Equatable, Sendable {
   }
 }
 
+public struct GesturesConfig: Codable, Equatable, Sendable {
+  public var enabled: Bool
+  public var modifier: String
+  public var swipeThreshold: Double
+  public var invertDirection: Bool
+
+  public init(
+    enabled: Bool = false,
+    modifier: String = "alt",
+    swipeThreshold: Double = 60,
+    invertDirection: Bool = false
+  ) {
+    self.enabled = enabled
+    self.modifier = modifier
+    self.swipeThreshold = swipeThreshold
+    self.invertDirection = invertDirection
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case enabled
+    case modifier
+    case swipeThreshold = "swipe_threshold"
+    case invertDirection = "invert_direction"
+  }
+
+  public init(from decoder: Decoder) throws {
+    let values = try decoder.container(keyedBy: CodingKeys.self)
+    let defaults = GesturesConfig()
+    enabled = try values.decodeIfPresent(Bool.self, forKey: .enabled) ?? defaults.enabled
+    modifier = try values.decodeIfPresent(String.self, forKey: .modifier) ?? defaults.modifier
+    swipeThreshold =
+      try values.decodeIfPresent(Double.self, forKey: .swipeThreshold)
+      ?? defaults.swipeThreshold
+    invertDirection =
+      try values.decodeIfPresent(Bool.self, forKey: .invertDirection)
+      ?? defaults.invertDirection
+  }
+}
+
 public struct DecorationsConfig: Codable, Equatable, Sendable {
   public var borders: BordersConfig
 

@@ -43,6 +43,39 @@ struct ConfigTests {
   }
 
   @Test
+  func gesturesAreOptInAndDecodeTheirSection() throws {
+    #expect(Config().gestures == GesturesConfig())
+
+    let config = try Config.decode(Data("""
+      [gestures]
+      enabled = true
+      modifier = "ctrl"
+      swipe_threshold = 120
+      invert_direction = true
+      """.utf8))
+    #expect(config.gestures.enabled)
+    #expect(config.gestures.modifier == "ctrl")
+    #expect(config.gestures.swipeThreshold == 120)
+    #expect(config.gestures.invertDirection)
+  }
+
+  @Test
+  func invalidGestureSettingsAreRejected() {
+    #expect(throws: ConfigError.invalidValue("gestures.swipe_threshold")) {
+      try Config.decode(Data("[gestures]\nswipe_threshold = 5".utf8))
+    }
+    #expect(throws: ConfigError.invalidValue("gestures.swipe_threshold")) {
+      try Config.decode(Data("[gestures]\nswipe_threshold = 500".utf8))
+    }
+    #expect(throws: ConfigError.invalidValue("gestures.modifier")) {
+      try Config.decode(Data("[gestures]\nmodifier = \"typo\"".utf8))
+    }
+    #expect(throws: ConfigError.invalidValue("gestures.modifier")) {
+      try Config.decode(Data("[gestures]\nmodifier = \"\"".utf8))
+    }
+  }
+
+  @Test
   func defaultControlOptionBindingsKeepEveryMonitorShortcut() {
     let keys = Config().keys
     #expect(keys["ctrl-alt-shift-left"] == "move-column left")

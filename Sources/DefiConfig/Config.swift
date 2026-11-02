@@ -7,6 +7,7 @@ public struct Config: Equatable, Sendable {
   public var layout: LayoutConfig
   public var animation: AnimationConfig
   public var overview: OverviewConfig
+  public var gestures: GesturesConfig
   public var decorations: DecorationsConfig
   public var menuBar: MenuBarConfig
   public var workspaces: WorkspacesConfig
@@ -23,6 +24,7 @@ public struct Config: Equatable, Sendable {
     layout: LayoutConfig = LayoutConfig(),
     animation: AnimationConfig = AnimationConfig(),
     overview: OverviewConfig = OverviewConfig(),
+    gestures: GesturesConfig = GesturesConfig(),
     decorations: DecorationsConfig = DecorationsConfig(),
     menuBar: MenuBarConfig = MenuBarConfig(),
     workspaces: WorkspacesConfig = WorkspacesConfig(),
@@ -37,6 +39,7 @@ public struct Config: Equatable, Sendable {
     self.layout = layout
     self.animation = animation
     self.overview = overview
+    self.gestures = gestures
     self.decorations = decorations
     self.menuBar = menuBar
     self.workspaces = workspaces
@@ -70,6 +73,7 @@ public struct Config: Equatable, Sendable {
       layout: raw.layout ?? LayoutConfig(),
       animation: raw.animation ?? AnimationConfig(),
       overview: raw.overview ?? OverviewConfig(),
+      gestures: raw.gestures ?? GesturesConfig(),
       decorations: raw.decorations ?? DecorationsConfig(),
       menuBar: raw.menuBar ?? MenuBarConfig(),
       workspaces: workspaces,
@@ -144,6 +148,15 @@ public struct Config: Equatable, Sendable {
       (0...64).contains(overview.windowCornerRadius)
     else {
       throw ConfigError.invalidValue("overview.window_corner_radius")
+    }
+    guard gestures.swipeThreshold.isFinite,
+      (10...400).contains(gestures.swipeThreshold)
+    else {
+      throw ConfigError.invalidValue("gestures.swipe_threshold")
+    }
+    guard normalizedAccelerator("\(gestures.modifier)-a", aliases: modifierCombinations) != nil
+    else {
+      throw ConfigError.invalidValue("gestures.modifier")
     }
     guard (0...64).contains(decorations.borders.width) else {
       throw ConfigError.invalidValue("decorations.borders.width")
@@ -386,6 +399,7 @@ private struct RawConfig: Decodable {
   var layout: LayoutConfig?
   var animation: AnimationConfig?
   var overview: OverviewConfig?
+  var gestures: GesturesConfig?
   var decorations: DecorationsConfig?
   var menuBar: MenuBarConfig?
   var workspaces: WorkspacesConfig?
@@ -401,6 +415,7 @@ private struct RawConfig: Decodable {
     case layout
     case animation
     case overview
+    case gestures
     case decorations
     case menuBar = "menu_bar"
     case workspaces

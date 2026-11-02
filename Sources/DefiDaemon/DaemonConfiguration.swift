@@ -229,6 +229,7 @@ extension Daemon {
       || previous.modifierCombinations != next.modifierCombinations
       || previous.defaultKeyModifier != next.defaultKeyModifier
       || previous.showCheatsheetOnModifierHold != next.showCheatsheetOnModifierHold
+      || previous.gestures != next.gestures
       || previous.input.focusFollowsMouse != next.input.focusFollowsMouse
       || previous.input.mouseFollowsFocus != next.input.mouseFollowsFocus
   }

@@ -51,6 +51,7 @@ public final class HotKeyManager {
   private let overviewCancelHandler: (@Sendable () -> Void)?
   private let cheatsheetHandler: @NavigationActor @Sendable (CheatsheetInput) -> Void
   private let cheatsheetModifierBits: UInt64?
+  private let gestureConfiguration: TrackpadSwipeGestureConfiguration?
   private let userInputTracker: UserInputTracker
   private let displayPointerRouter: DisplayPointerRouter?
   private let pointerMotionTracker: PointerMotionTracker
@@ -116,6 +117,10 @@ public final class HotKeyManager {
       accelerator: "\(config.defaultKeyModifier)-a",
       aliases: config.modifierCombinations
     ).modifierBits
+    gestureConfiguration = TrackpadSwipeGestureConfiguration(
+      config: config.gestures,
+      aliases: config.modifierCombinations
+    )
     self.userInputTracker = userInputTracker
     self.pointerMotionTracker = pointerMotionTracker
     self.displayPointerRouter = displayPointerRouter
@@ -181,6 +186,7 @@ public final class HotKeyManager {
       displayPointerRouter: displayPointerRouter,
       tracksPointerWindowTransitions: pointerMotionHandler != nil,
       cheatsheetModifierBits: bindingError == nil ? cheatsheetModifierBits : nil,
+      gestureConfiguration: gestureConfiguration,
       deliverCheatsheet: { input in
         NavigationActor.enqueue {
           cheatsheetHandler(input)
@@ -216,13 +222,17 @@ public final class HotKeyManager {
     }
     // Install interception first so passive observation sees routed pointer events.
     // Ordinary shortcuts always pass through the filtering callback unchanged.
-    let interceptorMask = mask & ~CGEventMask(
+    var interceptorExclusions = CGEventMask(
       (1 << CGEventType.flagsChanged.rawValue)
         | (1 << CGEventType.leftMouseDown.rawValue)
         | (1 << CGEventType.rightMouseDown.rawValue)
         | (1 << CGEventType.otherMouseDown.rawValue)
-        | (1 << CGEventType.scrollWheel.rawValue)
     )
+    // A configured swipe gesture must be able to swallow its scroll events.
+    if gestureConfiguration == nil {
+      interceptorExclusions |= CGEventMask(1 << CGEventType.scrollWheel.rawValue)
+    }
+    let interceptorMask = mask & ~interceptorExclusions
     let interceptorCallback: CGEventTapCallBack = { _, type, event, userInfo in
       guard let userInfo else { return Unmanaged.passUnretained(event) }
       return Unmanaged<InputMonitor>.fromOpaque(userInfo).takeUnretainedValue()
@@ -338,6 +348,7 @@ final class InputMonitor: @unchecked Sendable {
   private var overviewModeEnabled = false
   private var cheatsheetVisible = false
   private let cheatsheetModifierBits: UInt64?
+  private var swipeGestureTracker: TrackpadSwipeGestureTracker?
   private let deliverCheatsheet: @Sendable (CheatsheetInput) -> Void
   private let textInputFocused: @Sendable () -> Bool
   private let keyboardCaptured: @Sendable () -> Bool
@@ -349,6 +360,7 @@ final class InputMonitor: @unchecked Sendable {
     displayPointerRouter: DisplayPointerRouter? = nil,
     tracksPointerWindowTransitions: Bool,
     cheatsheetModifierBits: UInt64? = nil,
+    gestureConfiguration: TrackpadSwipeGestureConfiguration? = nil,
     deliverCheatsheet: @escaping @Sendable (CheatsheetInput) -> Void = { _ in },
     deliver: @escaping @Sendable (HotKeyInvocation) -> Void,
     deliverOverview: @escaping @Sendable (OverviewKeyAction) -> Void,
@@ -362,6 +374,7 @@ final class InputMonitor: @unchecked Sendable {
     self.textInputFocused = textInputFocused
     self.keyboardCaptured = keyboardCaptured
     self.cheatsheetModifierBits = cheatsheetModifierBits
+    self.swipeGestureTracker = gestureConfiguration.map(TrackpadSwipeGestureTracker.init)
     self.deliverCheatsheet = deliverCheatsheet
     self.userInputTracker = userInputTracker
     self.pointerMotionTracker = pointerMotionTracker
@@ -468,6 +481,7 @@ final class InputMonitor: @unchecked Sendable {
       pointerDeliveryScheduled = false
       lastPointerDeliveryTimestamp = nil
       capturedModifierReleaseState.reset()
+      swipeGestureTracker?.reset()
       lock.unlock()
       userInputTracker.invalidate(at: timestamp)
       pointerMotionTracker.invalidate(at: timestamp)
@@ -639,6 +653,9 @@ final class InputMonitor: @unchecked Sendable {
       }
       return Unmanaged.passUnretained(event)
     }
+    if type == .scrollWheel {
+      return handleTrackpadSwipeGesture(event)
+    }
     guard type == .keyDown else { return Unmanaged.passUnretained(event) }
     if let record = ShortcutRecorderButton.captureHandler.withLock({ $0 }) {
       capturedModifierReleaseState.reset()
@@ -673,6 +690,50 @@ final class InputMonitor: @unchecked Sendable {
       return nil
     }
     return Unmanaged.passUnretained(event)
+  }
+
+  private func handleTrackpadSwipeGesture(_ event: CGEvent) -> Unmanaged<CGEvent>? {
+    lock.lock()
+    guard var tracker = swipeGestureTracker else {
+      lock.unlock()
+      return Unmanaged.passUnretained(event)
+    }
+    let overviewOpen = overviewModeEnabled
+    let modifierBits = tracker.modifierBits
+    lock.unlock()
+    guard !overviewOpen,
+      ShortcutRecorderButton.captureHandler.withLock({ $0 }) == nil
+    else {
+      lock.lock()
+      swipeGestureTracker?.reset()
+      lock.unlock()
+      return Unmanaged.passUnretained(event)
+    }
+
+    let timestamp = Double(event.timestamp) / 1_000_000_000
+    let outcome = tracker.handle(
+      deltaX: event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2),
+      deltaY: event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1),
+      scrollPhase: event.getIntegerValueField(.scrollWheelEventScrollPhase),
+      momentumPhase: event.getIntegerValueField(.scrollWheelEventMomentumPhase),
+      isContinuous: event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0,
+      modifiersHeld: event.flags.rawValue & modifierBits == modifierBits
+    )
+    lock.lock()
+    swipeGestureTracker = tracker
+    if case .run = outcome { captured += 1 }
+    lock.unlock()
+
+    switch outcome {
+    case .passThrough:
+      return Unmanaged.passUnretained(event)
+    case .consume:
+      return nil
+    case .run(let command):
+      userInputTracker.recordCapturedCommand(at: timestamp)
+      deliver(HotKeyInvocation(command: command, timestamp: timestamp))
+      return nil
+    }
   }
 
   var isEnabled: Bool {

@@ -188,6 +188,34 @@ event. Defi also discards delayed warp when physical pointer moved after
 initiating keyboard command. These boundaries prevent feedback loops and stale
 cursor movement. CLI commands and native app focus changes never warp pointer.
 
+## `[gestures]`
+
+Maps a modifier plus a two-finger trackpad swipe to existing navigation
+commands. Disabled by default: while it is off, Defi never reads or blocks
+scroll events.
+
+```toml
+[gestures]
+enabled = true
+modifier = "alt"
+swipe_threshold = 60
+invert_direction = false
+```
+
+| Setting | Default | Values/type | Description |
+| --- | --- | --- | --- |
+| `enabled` | `false` | boolean | Captures continuous trackpad scrolls held with `modifier` and turns them into navigation. A mouse wheel always passes through. |
+| `modifier` | `"alt"` | modifier name or combination (`"alt"`, `"ctrl"`, `"ctrl-alt"`, `"cmd"`, `"shift"`) | Modifier that must be held for Defi to capture the swipe. Use the same aliases as `[keys]`. |
+| `swipe_threshold` | `60` | number from `10` to `400` | Point distance on the dominant axis before a command runs. Each further step of the same distance runs the command again. |
+| `invert_direction` | `false` | boolean | Reverses both swipe axes when they feel backwards next to your natural-scrolling setting. |
+
+A horizontal swipe focuses the previous or next column. A vertical swipe runs
+`focus-window-or-workspace` up or down, the same navigation the default `j` and
+`k` bindings use. The dominant axis is chosen once per gesture and stays for
+its whole swipe. The whole gesture — including its momentum — is consumed, so
+the application under the pointer does not scroll. Gestures do not run while
+the Overview is open or while a shortcut is being recorded.
+
 ## `[animation]`
 
 Moves windows on a Defi overlay, on every display: column navigation, width
