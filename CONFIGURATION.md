@@ -190,9 +190,9 @@ cursor movement. CLI commands and native app focus changes never warp pointer.
 
 ## `[gestures]`
 
-Maps a modifier plus a two-finger trackpad swipe to existing navigation
-commands. Disabled by default: while it is off, Defi never reads or blocks
-scroll events.
+Maps a modifier plus a two-finger trackpad swipe or a mouse wheel scroll to
+existing navigation commands. Disabled by default: while it is off, Defi never
+reads or blocks scroll events.
 
 ```toml
 [gestures]
@@ -200,21 +200,35 @@ enabled = true
 modifier = "alt"
 swipe_threshold = 60
 invert_direction = false
+mouse_wheel = true
 ```
 
 | Setting | Default | Values/type | Description |
 | --- | --- | --- | --- |
-| `enabled` | `false` | boolean | Captures continuous trackpad scrolls held with `modifier` and turns them into navigation. A mouse wheel always passes through. |
-| `modifier` | `"alt"` | modifier name or combination (`"alt"`, `"ctrl"`, `"ctrl-alt"`, `"cmd"`, `"shift"`) | Modifier that must be held for Defi to capture the swipe. Use the same aliases as `[keys]`. |
-| `swipe_threshold` | `60` | number from `10` to `400` | Point distance on the dominant axis before a command runs. Each further step of the same distance runs the command again. |
-| `invert_direction` | `false` | boolean | Reverses both swipe axes when they feel backwards next to your natural-scrolling setting. |
+| `enabled` | `false` | boolean | Captures scrolls held with `modifier` and turns them into navigation. |
+| `modifier` | `"alt"` | modifier name or combination (`"alt"`, `"ctrl"`, `"ctrl-alt"`, `"cmd"`, `"shift"`) | Modifier that must be held for Defi to capture the scroll. Use the same aliases as `[keys]`. |
+| `swipe_threshold` | `60` | number from `10` to `400` | Trackpad point distance on the dominant axis before a command runs. Each further step runs the command again. |
+| `invert_direction` | `false` | boolean | Reverses both axes for both devices when they feel backwards. |
+| `mouse_wheel` | `true` | boolean | Also captures discrete mouse wheel notches while `modifier` is held. A wheel notch is one step. |
 
-A horizontal swipe focuses the previous or next column. A vertical swipe runs
-`focus-window-or-workspace` up or down, the same navigation the default `j` and
-`k` bindings use. The dominant axis is chosen once per gesture and stays for
-its whole swipe. The whole gesture — including its momentum — is consumed, so
-the application under the pointer does not scroll. Gestures do not run while
-the Overview is open or while a shortcut is being recorded.
+Trackpad and mouse wheel share the modifier but not every mapping:
+
+| Input | Horizontal | Vertical |
+| --- | --- | --- |
+| Two-finger trackpad swipe | `focus-column` left/right | `focus-window-or-workspace` up/down |
+| Mouse wheel | `focus-column` left/right | `focus-workspace` up/down |
+
+A trackpad vertical swipe moves inside the stack first and then between
+workspaces, which matches the default `j` and `k` bindings. A vertical mouse
+wheel switches workspaces directly.
+
+Direction follows the deltas macOS reports, including your natural-scrolling
+setting. If either device feels reversed, set `invert_direction = true`; it
+flips both axes for both devices. The dominant axis of a trackpad swipe is
+chosen once and stays for the whole gesture. A captured gesture and its
+momentum are consumed, so the application under the pointer does not scroll.
+Gestures do not run while the Overview is open or while a shortcut is being
+recorded.
 
 ## `[animation]`
 

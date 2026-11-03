@@ -45,6 +45,7 @@ struct ConfigTests {
   @Test
   func gesturesAreOptInAndDecodeTheirSection() throws {
     #expect(Config().gestures == GesturesConfig())
+    #expect(Config().gestures.mouseWheel)
 
     let config = try Config.decode(Data("""
       [gestures]
@@ -52,11 +53,13 @@ struct ConfigTests {
       modifier = "ctrl"
       swipe_threshold = 120
       invert_direction = true
+      mouse_wheel = false
       """.utf8))
     #expect(config.gestures.enabled)
     #expect(config.gestures.modifier == "ctrl")
     #expect(config.gestures.swipeThreshold == 120)
     #expect(config.gestures.invertDirection)
+    #expect(!config.gestures.mouseWheel)
   }
 
   @Test

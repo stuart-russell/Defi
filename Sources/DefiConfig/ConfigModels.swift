@@ -51,17 +51,20 @@ public struct GesturesConfig: Codable, Equatable, Sendable {
   public var modifier: String
   public var swipeThreshold: Double
   public var invertDirection: Bool
+  public var mouseWheel: Bool
 
   public init(
     enabled: Bool = false,
     modifier: String = "alt",
     swipeThreshold: Double = 60,
-    invertDirection: Bool = false
+    invertDirection: Bool = false,
+    mouseWheel: Bool = true
   ) {
     self.enabled = enabled
     self.modifier = modifier
     self.swipeThreshold = swipeThreshold
     self.invertDirection = invertDirection
+    self.mouseWheel = mouseWheel
   }
 
   enum CodingKeys: String, CodingKey {
@@ -69,6 +72,7 @@ public struct GesturesConfig: Codable, Equatable, Sendable {
     case modifier
     case swipeThreshold = "swipe_threshold"
     case invertDirection = "invert_direction"
+    case mouseWheel = "mouse_wheel"
   }
 
   public init(from decoder: Decoder) throws {
@@ -82,6 +86,9 @@ public struct GesturesConfig: Codable, Equatable, Sendable {
     invertDirection =
       try values.decodeIfPresent(Bool.self, forKey: .invertDirection)
       ?? defaults.invertDirection
+    mouseWheel =
+      try values.decodeIfPresent(Bool.self, forKey: .mouseWheel)
+      ?? defaults.mouseWheel
   }
 }
 

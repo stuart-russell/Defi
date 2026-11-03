@@ -51,7 +51,7 @@ public final class HotKeyManager {
   private let overviewCancelHandler: (@Sendable () -> Void)?
   private let cheatsheetHandler: @NavigationActor @Sendable (CheatsheetInput) -> Void
   private let cheatsheetModifierBits: UInt64?
-  private let gestureConfiguration: TrackpadSwipeGestureConfiguration?
+  private let gestureConfiguration: ScrollGestureConfiguration?
   private let userInputTracker: UserInputTracker
   private let displayPointerRouter: DisplayPointerRouter?
   private let pointerMotionTracker: PointerMotionTracker
@@ -117,7 +117,7 @@ public final class HotKeyManager {
       accelerator: "\(config.defaultKeyModifier)-a",
       aliases: config.modifierCombinations
     ).modifierBits
-    gestureConfiguration = TrackpadSwipeGestureConfiguration(
+    gestureConfiguration = ScrollGestureConfiguration(
       config: config.gestures,
       aliases: config.modifierCombinations
     )
@@ -348,7 +348,7 @@ final class InputMonitor: @unchecked Sendable {
   private var overviewModeEnabled = false
   private var cheatsheetVisible = false
   private let cheatsheetModifierBits: UInt64?
-  private var swipeGestureTracker: TrackpadSwipeGestureTracker?
+  private var scrollGestureTracker: ScrollGestureTracker?
   private let deliverCheatsheet: @Sendable (CheatsheetInput) -> Void
   private let textInputFocused: @Sendable () -> Bool
   private let keyboardCaptured: @Sendable () -> Bool
@@ -360,7 +360,7 @@ final class InputMonitor: @unchecked Sendable {
     displayPointerRouter: DisplayPointerRouter? = nil,
     tracksPointerWindowTransitions: Bool,
     cheatsheetModifierBits: UInt64? = nil,
-    gestureConfiguration: TrackpadSwipeGestureConfiguration? = nil,
+    gestureConfiguration: ScrollGestureConfiguration? = nil,
     deliverCheatsheet: @escaping @Sendable (CheatsheetInput) -> Void = { _ in },
     deliver: @escaping @Sendable (HotKeyInvocation) -> Void,
     deliverOverview: @escaping @Sendable (OverviewKeyAction) -> Void,
@@ -374,7 +374,7 @@ final class InputMonitor: @unchecked Sendable {
     self.textInputFocused = textInputFocused
     self.keyboardCaptured = keyboardCaptured
     self.cheatsheetModifierBits = cheatsheetModifierBits
-    self.swipeGestureTracker = gestureConfiguration.map(TrackpadSwipeGestureTracker.init)
+    self.scrollGestureTracker = gestureConfiguration.map(ScrollGestureTracker.init)
     self.deliverCheatsheet = deliverCheatsheet
     self.userInputTracker = userInputTracker
     self.pointerMotionTracker = pointerMotionTracker
@@ -481,7 +481,7 @@ final class InputMonitor: @unchecked Sendable {
       pointerDeliveryScheduled = false
       lastPointerDeliveryTimestamp = nil
       capturedModifierReleaseState.reset()
-      swipeGestureTracker?.reset()
+      scrollGestureTracker?.reset()
       lock.unlock()
       userInputTracker.invalidate(at: timestamp)
       pointerMotionTracker.invalidate(at: timestamp)
@@ -654,7 +654,7 @@ final class InputMonitor: @unchecked Sendable {
       return Unmanaged.passUnretained(event)
     }
     if type == .scrollWheel {
-      return handleTrackpadSwipeGesture(event)
+      return handleScrollGestureNavigation(event)
     }
     guard type == .keyDown else { return Unmanaged.passUnretained(event) }
     if let record = ShortcutRecorderButton.captureHandler.withLock({ $0 }) {
@@ -692,9 +692,9 @@ final class InputMonitor: @unchecked Sendable {
     return Unmanaged.passUnretained(event)
   }
 
-  private func handleTrackpadSwipeGesture(_ event: CGEvent) -> Unmanaged<CGEvent>? {
+  private func handleScrollGestureNavigation(_ event: CGEvent) -> Unmanaged<CGEvent>? {
     lock.lock()
-    guard var tracker = swipeGestureTracker else {
+    guard var tracker = scrollGestureTracker else {
       lock.unlock()
       return Unmanaged.passUnretained(event)
     }
@@ -705,22 +705,33 @@ final class InputMonitor: @unchecked Sendable {
       ShortcutRecorderButton.captureHandler.withLock({ $0 }) == nil
     else {
       lock.lock()
-      swipeGestureTracker?.reset()
+      scrollGestureTracker?.reset()
       lock.unlock()
       return Unmanaged.passUnretained(event)
     }
 
     let timestamp = Double(event.timestamp) / 1_000_000_000
+    let isContinuous = event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0
+    // Trackpads report point deltas, discrete wheels line deltas. The sign
+    // follows macOS, including the natural-scrolling setting.
+    let deltaX =
+      isContinuous
+      ? event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
+      : event.getDoubleValueField(.scrollWheelEventDeltaAxis2)
+    let deltaY =
+      isContinuous
+      ? event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+      : event.getDoubleValueField(.scrollWheelEventDeltaAxis1)
     let outcome = tracker.handle(
-      deltaX: event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2),
-      deltaY: event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1),
+      deltaX: deltaX,
+      deltaY: deltaY,
       scrollPhase: event.getIntegerValueField(.scrollWheelEventScrollPhase),
       momentumPhase: event.getIntegerValueField(.scrollWheelEventMomentumPhase),
-      isContinuous: event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0,
+      isContinuous: isContinuous,
       modifiersHeld: event.flags.rawValue & modifierBits == modifierBits
     )
     lock.lock()
-    swipeGestureTracker = tracker
+    scrollGestureTracker = tracker
     if case .run = outcome { captured += 1 }
     lock.unlock()
 
