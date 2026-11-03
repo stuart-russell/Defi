@@ -83,7 +83,12 @@ public struct ConfigFileEditor: Sendable {
       baseSource = nil
     }
 
-    let (updatedSource, config) = try applying(changes, to: baseSource ?? "")
+    let (rendered, config) = try applying(changes, to: baseSource ?? "")
+    // A new file should end with a newline; an existing file keeps its own style.
+    var updatedSource = rendered
+    if baseSource == nil, !updatedSource.hasSuffix("\n") {
+      updatedSource += "\n"
+    }
     let updatedData = Data(updatedSource.utf8)
     guard updatedData != (baseData ?? Data()) else { return config }
 

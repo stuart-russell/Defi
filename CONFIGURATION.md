@@ -231,6 +231,21 @@ momentum are consumed, so the application under the pointer does not scroll.
 Gestures do not run while the Overview is open or while a shortcut is being
 recorded.
 
+From the CLI, without opening Settings:
+
+```sh
+defi gestures status [--json]
+defi gestures enable | disable | toggle
+defi gestures modifier ctrl-alt
+defi gestures threshold 80
+defi gestures invert on | off | toggle
+defi gestures mouse-wheel on | off | toggle
+defi gestures reset [enabled|modifier|threshold|invert|mouse-wheel]
+```
+
+The CLI edits this file directly and keeps your comments and other tables. The
+running daemon and an open Settings window reload the change automatically.
+
 ## `[animation]`
 
 Moves windows on a Defi overlay, on every display: column navigation, width

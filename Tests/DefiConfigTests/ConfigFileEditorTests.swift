@@ -89,6 +89,7 @@ struct ConfigFileEditorTests {
     #expect(config.gestures.enabled)
     #expect(config.gestures.modifier == "ctrl")
     let written = try String(contentsOf: url, encoding: .utf8)
+    #expect(written.hasSuffix("\n"))
     #expect(written.contains("[gestures]"))
     #expect(written.contains("enabled = true"))
     #expect(written.contains("modifier = \"ctrl\""))

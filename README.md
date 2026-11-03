@@ -148,6 +148,8 @@ The CLI is bundled with the app. For a source installation:
 ~/Applications/Defi.app/Contents/MacOS/defi status
 ~/Applications/Defi.app/Contents/MacOS/defi focus-column right
 ~/Applications/Defi.app/Contents/MacOS/defi workspace dev
+~/Applications/Defi.app/Contents/MacOS/defi gestures status
+~/Applications/Defi.app/Contents/MacOS/defi gestures modifier ctrl-alt
 ```
 
 The last command requires a named workspace called `dev`.
