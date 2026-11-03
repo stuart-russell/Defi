@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import DefiMacOS
+@testable import DefiConfig
 
 struct LosslessTOMLDocumentTests {
   @Test

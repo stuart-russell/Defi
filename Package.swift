@@ -58,7 +58,7 @@ let package = Package(
     ),
     .executableTarget(
       name: "DefiCLI",
-      dependencies: ["DefiModel", "DefiIPC"]
+      dependencies: ["DefiConfig", "DefiModel", "DefiIPC"]
     ),
     .testTarget(
       name: "DefiModelTests",
@@ -86,7 +86,7 @@ let package = Package(
     ),
     .testTarget(
       name: "DefiCLITests",
-      dependencies: ["DefiCLI"]
+      dependencies: ["DefiCLI", "DefiConfig"]
     ),
     .testTarget(
       name: "DefiMacOSTests",

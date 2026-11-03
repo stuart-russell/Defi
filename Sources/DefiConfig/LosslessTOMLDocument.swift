@@ -1,11 +1,11 @@
 import Foundation
 
-struct LosslessTOMLDocument {
+public struct LosslessTOMLDocument {
   private var lines: [String]
   private let newline: String
   private var hasFinalNewline: Bool
 
-  init(_ source: String) {
+  public init(_ source: String) {
     newline = source.contains("\r\n") ? "\r\n" : "\n"
     hasFinalNewline = source.hasSuffix("\n")
     lines = source.components(separatedBy: newline)
@@ -13,7 +13,7 @@ struct LosslessTOMLDocument {
     if lines == [""] { lines.removeAll() }
   }
 
-  mutating func set(table: String, key: String, value: String?, occurrence: Int = 0) {
+  public mutating func set(table: String, key: String, value: String?, occurrence: Int = 0) {
     var (start, end) = range(of: table, occurrence: occurrence)
     if start == nil {
       guard table != "rules" else { return }
@@ -67,7 +67,7 @@ struct LosslessTOMLDocument {
     lines.insert(insertion, at: insertionIndex)
   }
 
-  mutating func appendArrayTable(_ table: String, values: [(String, String)]) {
+  public mutating func appendArrayTable(_ table: String, values: [(String, String)]) {
     guard !table.isEmpty else { return }
     while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true {
       lines.removeLast()
@@ -78,13 +78,13 @@ struct LosslessTOMLDocument {
     hasFinalNewline = true
   }
 
-  mutating func removeArrayTable(_ table: String, occurrence: Int) {
+  public mutating func removeArrayTable(_ table: String, occurrence: Int) {
     let sections = ranges(of: table)
     guard sections.indices.contains(occurrence) else { return }
     lines.removeSubrange(sections[occurrence])
   }
 
-  mutating func moveArrayTable(_ table: String, from source: Int, to destination: Int) {
+  public mutating func moveArrayTable(_ table: String, from source: Int, to destination: Int) {
     let sections = ranges(of: table)
     guard sections.indices.contains(source), sections.indices.contains(destination),
       source != destination
@@ -98,7 +98,7 @@ struct LosslessTOMLDocument {
     }
   }
 
-  func contains(table: String, key: String, occurrence: Int = 0) -> Bool {
+  public func contains(table: String, key: String, occurrence: Int = 0) -> Bool {
     let (start, end) = range(of: table, occurrence: occurrence)
     guard let start else {
       return false
@@ -109,7 +109,7 @@ struct LosslessTOMLDocument {
   }
 
   /// The raw text of a one-line value, without its trailing comment.
-  func value(table: String, key: String, occurrence: Int = 0) -> String? {
+  public func value(table: String, key: String, occurrence: Int = 0) -> String? {
     let (start, end) = range(of: table, occurrence: occurrence)
     guard let start else { return nil }
     let sectionStart = table.isEmpty ? 0 : start + 1
@@ -121,11 +121,11 @@ struct LosslessTOMLDocument {
       .trimmingCharacters(in: .whitespaces)
   }
 
-  func count(ofArrayTable table: String) -> Int {
+  public func count(ofArrayTable table: String) -> Int {
     ranges(of: table).count
   }
 
-  func render() -> String {
+  public func render() -> String {
     lines.joined(separator: newline) + (hasFinalNewline ? newline : "")
   }
 
