@@ -20,11 +20,13 @@ struct RibbonProxyRecordingTests {
     renderer.enabled = true
     _ = try #require(renderer.prepareSurface(
       area: Rect(x: 0, y: 0, width: 200, height: 200), display: CGMainDisplayID()))
-    #expect(sharingStates() == [readOnly])
+    // One overlay exists per display, so this asserts the state of every surface.
+    #expect(!sharingStates().isEmpty)
+    #expect(sharingStates().allSatisfy { $0 == readOnly })
 
     status.animationsInRecordings = false
-    #expect(sharingStates() == [none])
+    #expect(sharingStates().allSatisfy { $0 == none })
     status.animationsInRecordings = true
-    #expect(sharingStates() == [readOnly])
+    #expect(sharingStates().allSatisfy { $0 == readOnly })
   }
 }
