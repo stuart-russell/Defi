@@ -315,6 +315,10 @@ public final class DefiSettingsModel {
     set(table: table, key: key, value: nil)
   }
 
+  public func reset(table: String, keys: [String]) {
+    save(keys.map { .set(table: table, key: $0, value: nil) })
+  }
+
   /// An explicit link choice for the spacing editor; `nil` links edges whose values match.
   /// Kept here so leaving the Layout page does not forget an unlink.
   public var linksHorizontalEdges: Bool?

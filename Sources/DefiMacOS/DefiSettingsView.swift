@@ -509,6 +509,57 @@ private struct InputSettingsView: View {
           .settingsSearchTarget(.pointerFocusScroll)
           .disabled(!model.config.input.focusFollowsMouse)
       }
+      Section("Gestures") {
+        Toggle(
+          SettingsOption.gesturesEnabled.title,
+          isOn: boolBinding("gestures", "enabled", model.config.gestures.enabled)
+        )
+        .settingsSearchTarget(.gesturesEnabled)
+        GestureModifierField(model: model)
+          .settingsSearchTarget(.gesturesModifier)
+          .disabled(!model.config.gestures.enabled)
+        SettingsNumberRow(
+          title: SettingsOption.gesturesThreshold.title,
+          value: model.config.gestures.swipeThreshold,
+          range: 10...400, step: 5, unit: "pt",
+          onChange: {
+            model.set(
+              table: "gestures", key: "swipe_threshold",
+              value: String(Int($0.rounded()))
+            )
+          }
+        )
+        .settingsSearchTarget(.gesturesThreshold)
+        .disabled(!model.config.gestures.enabled)
+        Toggle(
+          SettingsOption.gesturesInvert.title,
+          isOn: boolBinding(
+            "gestures", "invert_direction", model.config.gestures.invertDirection
+          )
+        )
+        .settingsSearchTarget(.gesturesInvert)
+        .disabled(!model.config.gestures.enabled)
+        Toggle(
+          SettingsOption.gesturesMouseWheel.title,
+          isOn: boolBinding("gestures", "mouse_wheel", model.config.gestures.mouseWheel)
+        )
+        .settingsSearchTarget(.gesturesMouseWheel)
+        .disabled(!model.config.gestures.enabled)
+        Text(
+          "Hold the modifier and swipe two fingers or scroll a wheel. Horizontal moves between columns; vertical moves through windows and then workspaces."
+        )
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        Button("Reset Gestures") {
+          model.reset(
+            table: "gestures",
+            keys: [
+              "enabled", "modifier", "swipe_threshold", "invert_direction",
+              "mouse_wheel",
+            ]
+          )
+        }
+      }
       Section("Modifiers") {
         DefaultModifierField(model: model)
           .settingsSearchTarget(.defaultModifier)
@@ -592,6 +643,9 @@ private struct InputSettingsView: View {
     switch (table, key) {
     case ("input", "focus_follows_mouse"): model.config.input.focusFollowsMouse
     case ("input", "mouse_follows_focus"): model.config.input.mouseFollowsFocus
+    case ("gestures", "enabled"): model.config.gestures.enabled
+    case ("gestures", "invert_direction"): model.config.gestures.invertDirection
+    case ("gestures", "mouse_wheel"): model.config.gestures.mouseWheel
     default: nil
     }
   }
@@ -1746,6 +1800,32 @@ private struct DefaultModifierField: View {
 
   private func commit() {
     model.set(table: "", key: "default_key_modifier", value: tomlString(draft))
+    focused = false
+  }
+}
+
+@MainActor
+private struct GestureModifierField: View {
+  let model: DefiSettingsModel
+  @State private var draft: String
+  @FocusState private var focused: Bool
+
+  init(model: DefiSettingsModel) {
+    self.model = model
+    _draft = State(initialValue: model.config.gestures.modifier)
+  }
+
+  var body: some View {
+    TextField(SettingsOption.gesturesModifier.title, text: $draft)
+      .focused($focused)
+      .onSubmit(commit)
+      .onChange(of: model.config.gestures.modifier) { _, value in
+        draft = value
+      }
+  }
+
+  private func commit() {
+    model.set(table: "gestures", key: "modifier", value: tomlString(draft))
     focused = false
   }
 }

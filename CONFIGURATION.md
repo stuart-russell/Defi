@@ -245,6 +245,7 @@ defi gestures reset [enabled|modifier|threshold|invert|mouse-wheel]
 
 The CLI edits this file directly and keeps your comments and other tables. The
 running daemon and an open Settings window reload the change automatically.
+The same values are available under **Settings → Input → Gestures**.
 
 ## `[animation]`
 

@@ -38,6 +38,11 @@ enum SettingsOption: String, CaseIterable, Sendable {
   case pointerFollowsFocus
   case pointerFocusScroll
   case pointerFocusDelay
+  case gesturesEnabled
+  case gesturesModifier
+  case gesturesThreshold
+  case gesturesInvert
+  case gesturesMouseWheel
   case defaultModifier
   case modifierAliases
   case customShortcut
@@ -90,6 +95,22 @@ enum SettingsOption: String, CaseIterable, Sendable {
     case .pointerFollowsFocus: (.input, "Move pointer to keyboard focus", "input.mouse_follows_focus mouse")
     case .pointerFocusScroll: (.input, "Maximum pointer-focus scroll", "input.focus_follows_mouse_max_scroll_amount mouse")
     case .pointerFocusDelay: (.input, "Pointer-focus delay", "input.focus_follows_mouse_delay_ms mouse")
+    case .gesturesEnabled: (
+      .input, "Enable trackpad and mouse gestures",
+      "gestures.enabled swipe scroll trackpad mouse wheel"
+    )
+    case .gesturesModifier: (
+      .input, "Gesture modifier", "gestures.modifier swipe scroll key modifier"
+    )
+    case .gesturesThreshold: (
+      .input, "Gesture swipe threshold", "gestures.swipe_threshold distance points"
+    )
+    case .gesturesInvert: (
+      .input, "Invert gesture direction", "gestures.invert_direction reverse natural scrolling"
+    )
+    case .gesturesMouseWheel: (
+      .input, "Use the mouse wheel for gestures", "gestures.mouse_wheel scroll wheel"
+    )
     case .defaultModifier: (.input, "Default key modifier", "default_key_modifier keyboard")
     case .modifierAliases: (.input, "Modifier aliases", "modifier_combinations alias modifiers")
     case .customShortcut: (.input, "Add Custom Shortcut…", "custom command keybinding keyboard binding")

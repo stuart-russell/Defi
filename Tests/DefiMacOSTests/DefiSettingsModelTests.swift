@@ -304,6 +304,44 @@ struct DefiSettingsModelTests {
     #expect(model.message?.contains("changed outside Settings") == true)
   }
 
+  @Test
+  func gestureEditsPersistAndResetTogether() throws {
+    let url = try configFile()
+    defer { removeConfig(url) }
+    let model = DefiSettingsModel(configURL: url)
+
+    model.set(table: "gestures", key: "enabled", value: "true")
+    model.set(table: "gestures", key: "modifier", value: "\"ctrl\"")
+    model.set(table: "gestures", key: "swipe_threshold", value: "90")
+    model.set(table: "gestures", key: "mouse_wheel", value: "false")
+    #expect(model.message == nil)
+
+    let reloaded = DefiSettingsModel(configURL: url)
+    #expect(reloaded.config.gestures.enabled)
+    #expect(reloaded.config.gestures.modifier == "ctrl")
+    #expect(reloaded.config.gestures.swipeThreshold == 90)
+    #expect(!reloaded.config.gestures.mouseWheel)
+
+    reloaded.reset(
+      table: "gestures",
+      keys: ["enabled", "modifier", "swipe_threshold", "mouse_wheel"]
+    )
+    #expect(reloaded.message == nil)
+    #expect(reloaded.config.gestures == GesturesConfig())
+  }
+
+  @Test
+  func invalidGestureModifierIsRejectedWithoutWriting() throws {
+    let url = try configFile()
+    defer { removeConfig(url) }
+    let model = DefiSettingsModel(configURL: url)
+
+    model.set(table: "gestures", key: "modifier", value: "\"typo\"")
+
+    #expect(model.message != nil)
+    #expect(!FileManager.default.fileExists(atPath: url.path))
+  }
+
   private func configURL() -> URL {
     FileManager.default.temporaryDirectory.appending(path: UUID().uuidString).appending(path: "config.toml")
   }
