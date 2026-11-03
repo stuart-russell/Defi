@@ -714,14 +714,23 @@ final class InputMonitor: @unchecked Sendable {
     let isContinuous = event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0
     // Trackpads report point deltas, discrete wheels line deltas. The sign
     // follows macOS, including the natural-scrolling setting.
-    let deltaX =
+    var deltaX =
       isContinuous
       ? event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
       : event.getDoubleValueField(.scrollWheelEventDeltaAxis2)
-    let deltaY =
+    var deltaY =
       isContinuous
       ? event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
       : event.getDoubleValueField(.scrollWheelEventDeltaAxis1)
+    // A plain wheel has no horizontal axis, so Shift+wheel is the common
+    // substitute. Leave it alone when Shift is the gesture modifier itself.
+    let shiftBit = CGEventFlags.maskShift.rawValue
+    if !isContinuous, deltaX == 0, event.flags.contains(.maskShift),
+      modifierBits & shiftBit == 0
+    {
+      deltaX = deltaY
+      deltaY = 0
+    }
     let outcome = tracker.handle(
       deltaX: deltaX,
       deltaY: deltaY,

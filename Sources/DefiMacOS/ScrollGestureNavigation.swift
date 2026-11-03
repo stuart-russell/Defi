@@ -222,8 +222,8 @@ struct ScrollGestureTracker {
     switch (axis, forward) {
     case (.horizontal, true): return "focus-column right"
     case (.horizontal, false): return "focus-column left"
-    case (.vertical, true): return "focus-workspace up"
-    case (.vertical, false): return "focus-workspace down"
+    case (.vertical, true): return "focus-window-or-workspace up"
+    case (.vertical, false): return "focus-window-or-workspace down"
     }
   }
 

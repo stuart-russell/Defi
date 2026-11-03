@@ -69,11 +69,11 @@ struct ScrollGestureTests {
   }
 
   @Test
-  func mouseWheelVerticalFocusesWorkspacesOneNotchAtATime() throws {
+  func mouseWheelVerticalUsesTheSameNavigationAsTheTrackpad() throws {
     var tracker = ScrollGestureTracker(configuration: try gestureConfiguration())
-    #expect(wheel(&tracker, y: 1) == .run("focus-workspace up"))
-    #expect(wheel(&tracker, y: 1) == .run("focus-workspace up"))
-    #expect(wheel(&tracker, y: -1) == .run("focus-workspace down"))
+    #expect(wheel(&tracker, y: 1) == .run("focus-window-or-workspace up"))
+    #expect(wheel(&tracker, y: 1) == .run("focus-window-or-workspace up"))
+    #expect(wheel(&tracker, y: -1) == .run("focus-window-or-workspace down"))
   }
 
   @Test
@@ -104,16 +104,16 @@ struct ScrollGestureTests {
     var tracker = ScrollGestureTracker(configuration: try gestureConfiguration())
     #expect(wheel(&tracker, y: 0.4) == .consume)
     #expect(wheel(&tracker, y: 0.4) == .consume)
-    #expect(wheel(&tracker, y: 0.4) == .run("focus-workspace up"))
+    #expect(wheel(&tracker, y: 0.4) == .run("focus-window-or-workspace up"))
     #expect(wheel(&tracker, y: 0.4) == .consume)
   }
 
   @Test
   func acceleratedNotchRunsOneStepPerEvent() throws {
     var tracker = ScrollGestureTracker(configuration: try gestureConfiguration())
-    #expect(wheel(&tracker, y: 3) == .run("focus-workspace up"))
+    #expect(wheel(&tracker, y: 3) == .run("focus-window-or-workspace up"))
     #expect(wheel(&tracker, y: 0) == .consume)
-    #expect(wheel(&tracker, y: 3) == .run("focus-workspace up"))
+    #expect(wheel(&tracker, y: 3) == .run("focus-window-or-workspace up"))
   }
 
   @Test
@@ -121,7 +121,7 @@ struct ScrollGestureTests {
     var tracker = ScrollGestureTracker(
       configuration: try gestureConfiguration(invertDirection: true)
     )
-    #expect(wheel(&tracker, y: 1) == .run("focus-workspace down"))
+    #expect(wheel(&tracker, y: 1) == .run("focus-window-or-workspace down"))
     #expect(wheel(&tracker, x: 1) == .run("focus-column left"))
   }
 
@@ -304,7 +304,7 @@ struct ScrollGestureEventTests {
   }
 
   @Test
-  func modifierMouseWheelIsConsumedAndRunsWorkspaceNavigation() throws {
+  func modifierMouseWheelIsConsumedAndRunsNavigation() throws {
     let harness = makeMonitor(
       gestures: GesturesConfig(enabled: true, modifier: "alt", swipeThreshold: 50)
     )
@@ -314,7 +314,7 @@ struct ScrollGestureEventTests {
     #expect(harness.monitor.intercept(
       type: .scrollWheel, event: try mouseWheelEvent(x: 1)
     ) == nil)
-    #expect(harness.recorder.values == ["focus-workspace up", "focus-column right"])
+    #expect(harness.recorder.values == ["focus-window-or-workspace up", "focus-column right"])
   }
 
   @Test
@@ -325,7 +325,31 @@ struct ScrollGestureEventTests {
     #expect(harness.monitor.intercept(
       type: .scrollWheel, event: try mouseWheelEvent(y: -1)
     ) == nil)
-    #expect(harness.recorder.values == ["focus-workspace down"])
+    #expect(harness.recorder.values == ["focus-window-or-workspace down"])
+  }
+
+  @Test
+  func shiftWheelNavigatesColumnsOnAPlainWheel() throws {
+    let harness = makeMonitor(
+      gestures: GesturesConfig(enabled: true, modifier: "alt", swipeThreshold: 50)
+    )
+    #expect(harness.monitor.intercept(
+      type: .scrollWheel,
+      event: try mouseWheelEvent(y: 1, modifiers: [.maskAlternate, .maskShift])
+    ) == nil)
+    #expect(harness.recorder.values == ["focus-column right"])
+  }
+
+  @Test
+  func shiftAsTheGestureModifierKeepsVerticalNavigation() throws {
+    let harness = makeMonitor(
+      gestures: GesturesConfig(enabled: true, modifier: "shift", swipeThreshold: 50)
+    )
+    #expect(harness.monitor.intercept(
+      type: .scrollWheel,
+      event: try mouseWheelEvent(y: 1, modifiers: .maskShift)
+    ) == nil)
+    #expect(harness.recorder.values == ["focus-window-or-workspace up"])
   }
 
   @Test

@@ -211,16 +211,17 @@ mouse_wheel = true
 | `invert_direction` | `false` | boolean | Reverses both axes for both devices when they feel backwards. |
 | `mouse_wheel` | `true` | boolean | Also captures discrete mouse wheel notches while `modifier` is held. A wheel notch is one step. |
 
-Trackpad and mouse wheel share the modifier but not every mapping:
+Trackpad and mouse wheel share the modifier and the same mapping:
 
 | Input | Horizontal | Vertical |
 | --- | --- | --- |
 | Two-finger trackpad swipe | `focus-column` left/right | `focus-window-or-workspace` up/down |
-| Mouse wheel | `focus-column` left/right | `focus-workspace` up/down |
+| Mouse wheel | `focus-column` left/right | `focus-window-or-workspace` up/down |
 
-A trackpad vertical swipe moves inside the stack first and then between
-workspaces, which matches the default `j` and `k` bindings. A vertical mouse
-wheel switches workspaces directly.
+Vertical movement goes through the stack first and then between workspaces,
+matching the default `j` and `k` bindings. A plain wheel has no horizontal
+axis, so Shift+wheel runs column focus; when `modifier` itself contains Shift,
+the wheel keeps its vertical meaning.
 
 Direction follows the deltas macOS reports, including your natural-scrolling
 setting. If either device feels reversed, set `invert_direction = true`; it
